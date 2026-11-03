@@ -1,0 +1,91 @@
+name: Build & Release APK
+
+on:
+  push:
+    paths-ignore: ['design/**', '**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read version
+        id: ver
+        run: |
+          V=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore signing key from secret
+        id: key
+        env:
+          KS: ${{ secrets.TIKGRAB_KEYSTORE }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/tikgrab.jks"
+            echo "TIKGRAB_KEYSTORE_FILE=$RUNNER_TEMP/tikgrab.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Chưa có secret TIKGRAB_KEYSTORE — chỉ build thử, không phát hành."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build APK
+        env:
+          TIKGRAB_KEYSTORE_PASSWORD: ${{ secrets.TIKGRAB_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "TikGrab-v${{ steps.ver.outputs.version }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TikGrab-v${{ steps.ver.outputs.version }}
+          path: TikGrab-v*.apk
+
+      - name: Release notes from whatsnew.json
+        if: steps.ver.outputs.exists == 'false' && steps.key.outputs.signed == 'true'
+        run: |
+          python3 - <<'PY'
+          import json
+          w = json.load(open('app/src/main/assets/whatsnew.json', encoding='utf-8'))
+          out = []
+          for key, title in (('new', 'Mới'), ('improved', 'Cải thiện'), ('fixed', 'Sửa lỗi')):
+              if w.get(key):
+                  out.append(f'### {title}')
+                  out += [f'- {x}' for x in w[key]]
+                  out.append('')
+          out.append('Cài lần đầu: tải file .apk bên dưới về điện thoại và mở để cài. Các lần sau app tự báo khi có bản mới.')
+          open('notes.md', 'w', encoding='utf-8').write('\n'.join(out))
+          PY
+
+      - name: Publish GitHub Release
+        if: steps.ver.outputs.exists == 'false' && steps.key.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          gh release create "v$V" "TikGrab-v$V.apk" \
+            --title "TikGrab v$V" --notes-file notes.md --target "$GITHUB_SHA" --latest
