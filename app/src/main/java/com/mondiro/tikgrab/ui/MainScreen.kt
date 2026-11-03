@@ -211,8 +211,8 @@ fun MainScreen(vm: MainViewModel) {
 
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 600.dp
-            val tile: @Composable (SavedItem, Modifier) -> Unit = { it, m ->
-                MediaTile(it, m, onOpen = { open(ctx, it) }, onShare = { share(ctx, it) }, onDelete = { delete(it) })
+            val tile: @Composable (SavedItem, Modifier) -> Unit = { item, m ->
+                MediaTile(item, m, onOpen = { open(ctx, item) }, onShare = { share(ctx, item) }, onDelete = { delete(item) })
             }
             if (wide) {
                 Row(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
@@ -290,9 +290,9 @@ private fun LazyGridScope.libraryHeader(vm: MainViewModel, filters: List<Filter>
 }
 
 private fun LazyGridScope.libraryItems(
-    items: List<SavedItem>, libraryEmpty: Boolean, tile: @Composable (SavedItem, Modifier) -> Unit,
+    list: List<SavedItem>, libraryEmpty: Boolean, tile: @Composable (SavedItem, Modifier) -> Unit,
 ) {
-    if (items.isEmpty()) {
+    if (list.isEmpty()) {
         full("empty") {
             Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Rounded.VideoLibrary, null, tint = C.muted, modifier = Modifier.size(40.dp))
@@ -304,7 +304,7 @@ private fun LazyGridScope.libraryItems(
             }
         }
     } else {
-        items(items, key = { it.uri.toString() }) { tile(it, Modifier.animateItem()) }
+        items(list, key = { it.uri.toString() }) { tile(it, Modifier.animateItem()) }
     }
 }
 

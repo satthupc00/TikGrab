@@ -80,7 +80,7 @@ object TikApi {
             val d = j.getJSONObject("data")
             val author = d.optJSONObject("author")
             val imgs = d.optJSONArray("images")
-            val images = buildList { if (imgs != null) for (i in 0 until imgs.length()) abs(imgs.optString(i))?.let(::add) }
+            val images = buildList { if (imgs != null) for (i in 0 until imgs.length()) abs(imgs.optString(i))?.let { add(it) } }
             return TikInfo(
                 id = d.optString("id").ifBlank { System.currentTimeMillis().toString() },
                 title = d.optString("title"),

@@ -38,10 +38,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var message by mutableStateOf<String?>(null)
 
     // cài đặt (giữ dạng state để giao diện tự cập nhật)
-    var baseFolder by mutableStateOf(prefs.baseFolder); private set
-    var saveMp3 by mutableStateOf(prefs.saveMp3); private set
-    var autoClip by mutableStateOf(prefs.autoClipboard); private set
-    var vibrate by mutableStateOf(prefs.vibrate); private set
+    var baseFolder by mutableStateOf(prefs.baseFolder)
+        private set
+    var saveMp3 by mutableStateOf(prefs.saveMp3)
+        private set
+    var autoClip by mutableStateOf(prefs.autoClipboard)
+        private set
+    var vibrate by mutableStateOf(prefs.vibrate)
+        private set
 
     private var lastClipStamp = -1L
     private val handled = mutableSetOf<String>()

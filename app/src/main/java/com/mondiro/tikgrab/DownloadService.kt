@@ -217,9 +217,11 @@ class DownloadService : Service() {
 
     private fun toast(s: String) = main.post { Toast.makeText(applicationContext, s, Toast.LENGTH_SHORT).show() }
 
+    @Suppress("DEPRECATION")
     private fun vibrate() = runCatching {
-        getSystemService(VibratorManager::class.java)?.defaultVibrator
-            ?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        val v = if (android.os.Build.VERSION.SDK_INT >= 31) getSystemService(VibratorManager::class.java)?.defaultVibrator
+        else getSystemService(android.os.Vibrator::class.java)
+        v?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
     }
 
     private fun finishIfIdle() {
