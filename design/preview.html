@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TikGrab Layout Preview</title>
+<style>
+:root{
+  --chrome:#1F2126;--panel:#26292F;--line:#363A42;--hover:#2F333A;--stage:#2B2D31;
+  --text:#E8E9EC;--muted:#8D929C;--red:#E5383B;--warn:#F2B84B;--selected-bg:#3A2426;--green:#3DDC8A;
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);--t-fast:.12s;--t-med:.22s;
+  --page:#15161A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--text);font:14px/1.45 Roboto,"Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:22px;margin:0 0 4px}
+h1 .m{color:var(--red)}
+.sub{color:var(--muted);margin:0 0 28px;max-width:760px}
+.row{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{font-size:13px;color:var(--muted)} .cap b{color:var(--text)}
+
+/* device frames (dp ~ css px) */
+.device{background:#000;border-radius:34px;padding:10px;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px #2a2c31}
+.screen{position:relative;background:var(--chrome);border-radius:26px;overflow:hidden;display:flex;flex-direction:column}
+.outer .screen{width:392px;height:860px}
+.inner .screen{width:820px;height:740px}
+.cutout{position:absolute;top:10px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#000;z-index:5}
+.inner .cutout{left:62%}
+.status{height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;color:#c9ccd2}
+
+/* thin top row: icons on the right */
+.topbar{display:flex;align-items:center;justify-content:flex-end;gap:2px;padding:2px 8px 0;flex:0 0 auto}
+.ibtn{width:38px;height:38px;border:0;border-radius:50%;background:none;color:var(--text);display:grid;place-items:center;cursor:pointer}
+.ibtn:hover{background:var(--hover)}
+.ibtn svg{width:20px;height:20px}
+.upd.checking svg{animation:spin .8s linear infinite}
+.upd.latest{color:var(--green)}
+.latest-tag{font-size:11px;font-weight:800;color:#2EB872;background:#2eb87224;padding:1px 8px;border-radius:20px;display:none;animation:pop .32s var(--ease-spring)}
+.latest-tag.on{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+
+.body{flex:1;min-height:0;overflow:auto;padding:6px 16px 16px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+.split{flex:1;min-height:0;display:grid;grid-template-columns:330px 1fr;gap:16px;padding:6px 16px 12px}
+.split .left{display:flex;flex-direction:column;gap:14px;overflow:auto;scrollbar-width:none}
+.split .right{display:flex;flex-direction:column;gap:12px;min-height:0;background:var(--stage);border-radius:16px;padding:14px}
+
+/* paste card */
+.card{background:var(--panel);border-radius:16px;padding:14px;box-shadow:0 0 0 1px var(--line)}
+.card h3{margin:0 0 10px;font-size:15px}
+.field{display:flex;align-items:center;gap:6px;height:52px;background:var(--chrome);border-radius:14px;padding:0 6px 0 14px;box-shadow:0 0 0 1px var(--line);transition:box-shadow var(--t-med) var(--ease-out)}
+.field:focus-within{box-shadow:0 0 0 2px var(--red),0 0 0 5px rgba(229,56,59,.18)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--text);font:inherit;font-size:14px}
+.field input::placeholder{color:var(--muted)}
+.chipbtn{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chipbtn:hover{border-color:var(--red)}
+.chipbtn svg{width:16px;height:16px}
+.primary{margin-top:10px;width:100%;height:50px;border:0;border-radius:14px;background:var(--red);color:#fff;font:inherit;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  transition:transform var(--t-med) var(--ease-out),box-shadow var(--t-med) var(--ease-out),background-color var(--t-fast)}
+.primary:hover{background:#F04447;box-shadow:0 6px 16px rgba(229,56,59,.35)}
+.primary:active{transform:scale(.97)}
+.primary svg{width:18px;height:18px}
+.clip{margin-top:10px;display:flex;align-items:center;gap:10px;background:var(--selected-bg);border-radius:12px;padding:8px 8px 8px 12px;font-size:12.5px}
+.clip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f1c9ca}
+.clip button{height:32px;border:0;border-radius:8px;background:var(--red);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:0 12px;cursor:pointer}
+
+/* tip */
+.tip{display:flex;gap:12px;align-items:flex-start;font-size:12.5px;color:var(--muted);padding:12px 14px;border-radius:14px;border:1px dashed #4a4e57}
+.tip svg{flex:0 0 auto;width:20px;height:20px;color:var(--red);margin-top:1px}
+.tip b{color:var(--text)}
+
+/* active download */
+.job{display:flex;gap:12px;align-items:center}
+.job .th{width:54px;height:72px;border-radius:10px;flex:0 0 auto}
+.job .meta{flex:1;min-width:0}
+.job .t{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job .a{font-size:12px;color:var(--muted)}
+.bar{height:6px;border-radius:6px;background:#3a3e46;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--red);border-radius:6px;transition:width .25s linear}
+.job .pct{font-size:12px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums;display:flex;justify-content:space-between}
+.done-ic{color:var(--green)}
+
+/* library */
+.libhead{display:flex;align-items:center;justify-content:space-between}
+.libhead h3{margin:0;font-size:15px}
+.libhead .count{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px}
+.chip{height:32px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.chip:hover{border-color:var(--red);transform:translateY(-1px)}
+.chip.on{background:var(--selected-bg);border-color:var(--red);color:#fff;animation:pop .25s var(--ease-spring)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.inner .grid{grid-template-columns:repeat(4,1fr);grid-auto-rows:max-content;flex:1 1 0;min-height:0;overflow:auto;scrollbar-width:none;align-content:start}
+.vid{flex:0 0 auto}
+.vid{position:relative;aspect-ratio:9/16;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform var(--t-med) var(--ease-out)}
+.vid:hover{transform:translateY(-2px)}
+.vid .play{position:absolute;inset:0;display:grid;place-items:center;opacity:.85}
+.vid .play svg{width:30px;height:30px;color:#fff;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.vid .dur{position:absolute;right:6px;bottom:6px;font-size:11px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums}
+.vid .au{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:600;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px #000}
+.vid .mp3{position:absolute;left:6px;top:6px;font-size:10px;font-weight:800;background:var(--red);padding:1px 6px;border-radius:6px}
+.vid.new{animation:rise .45s var(--ease-out)}
+@keyframes rise{from{transform:translateY(8px) scale(.96);opacity:0}}
+
+.credit{flex:0 0 auto;text-align:right;padding:4px 18px 10px;font-size:11px;color:#6B707A;border-top:1px solid #2a2d33}
+
+/* settings bottom sheet */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-radius:22px 22px 0 0;padding:10px 18px 26px;transform:translateY(105%);transition:transform .32s var(--ease-out);max-height:88%;overflow:auto}
+.inner .sheet{left:50%;right:auto;width:460px;margin-left:-230px}
+.open .scrim{opacity:1;pointer-events:auto}
+.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:4px;background:#4a4e57;margin:0 auto 12px}
+.sheet h2{font-size:18px;margin:0 0 12px}
+.grp{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.set{display:flex;align-items:center;gap:12px;min-height:56px;border-bottom:1px solid var(--line)}
+.set .l{flex:1;min-width:0}
+.set .l div{font-weight:600}
+.set .l small{color:var(--muted);font-size:12px}
+.sw{appearance:none;width:44px;height:26px;border-radius:20px;background:#474C55;position:relative;cursor:pointer;transition:background-color var(--t-med)}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform var(--t-med) var(--ease-spring)}
+.sw:checked{background:var(--red)} .sw:checked::after{transform:translateX(18px)}
+.ver{display:flex;gap:8px;margin-top:10px}
+.ver .chipbtn{flex:1;justify-content:center;height:44px}
+
+/* share flow */
+.flow{display:flex;flex-direction:column;gap:12px;width:392px}
+.step{background:var(--panel);border-radius:16px;padding:14px;box-shadow:0 0 0 1px var(--line)}
+.step .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;font-size:12px;font-weight:800;margin-right:8px}
+.step .h{font-weight:700;display:flex;align-items:center}
+.step p{margin:6px 0 0;color:var(--muted);font-size:12.5px}
+.share{display:flex;gap:14px;margin-top:12px}
+.share div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.share i{width:48px;height:48px;border-radius:50%;background:#3a3e46;display:block}
+.share .me i{background:#262930 url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=) center/80% no-repeat;box-shadow:0 0 0 2px var(--red)}
+.share .me{color:#fff;font-weight:700}
+.notif{margin-top:12px;background:#2f323a;border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center}
+.notif img{width:28px;height:28px}
+.notif .x{flex:1;min-width:0;font-size:12.5px}
+.notif .x b{display:block;font-size:13px}
+.notif .bar{margin-top:6px}
+
+.iconbox{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.ic{border-radius:22%;background:#262930;display:grid;place-items:center}
+.ic img{width:80%}
+.light{background:#ECEDEF;border-radius:14px;padding:12px;display:flex;gap:16px;align-items:flex-end}
+.dark{background:#0d0e10;border-radius:14px;padding:12px;display:flex;gap:16px;align-items:flex-end}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media (max-width:900px){.inner{transform-origin:top left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="m">Tik</span>Grab · xem trước giao diện</h1>
+  <p class="sub">Bản xem trước bố cục app Android cho Samsung Z Fold 7. Bấm thử được: dán link → Tải về, nút mũi tên xoay (kiểm tra cập nhật), nút bánh răng (Cài đặt), các chip lọc. Dữ liệu và ảnh chỉ là mẫu.</p>
+
+  <div class="row">
+    <!-- OUTER SCREEN -->
+    <div class="col">
+      <div class="cap"><b>Màn ngoài</b> · 6.5" · 1 cột</div>
+      <div class="device outer"><div class="screen" data-screen>
+        <div class="cutout"></div>
+        <div class="status"><span>9:41</span><span>5G ▮▮▮ 86%</span></div>
+        <div class="topbar">
+          <span class="latest-tag">latest</span>
+          <button class="ibtn upd" title="Kiểm tra cập nhật" aria-label="Kiểm tra cập nhật"></button>
+          <button class="ibtn gear" title="Cài đặt" aria-label="Cài đặt"></button>
+        </div>
+        <div class="body">
+          <div class="slot-input"></div>
+          <div class="slot-job"></div>
+          <div class="slot-tip"></div>
+          <div class="slot-lib"></div>
+        </div>
+        <div class="credit">Created by Mondiro</div>
+        <div class="slot-sheet"></div>
+      </div></div>
+    </div>
+
+    <!-- INNER SCREEN -->
+    <div class="col">
+      <div class="cap"><b>Màn trong</b> · 8" · 2 cột (bên trái tải, bên phải thư viện)</div>
+      <div class="device inner"><div class="screen" data-screen>
+        <div class="cutout"></div>
+        <div class="status"><span>9:41</span><span>5G ▮▮▮ 86%</span></div>
+        <div class="topbar">
+          <span class="latest-tag">latest</span>
+          <button class="ibtn upd" title="Kiểm tra cập nhật" aria-label="Kiểm tra cập nhật"></button>
+          <button class="ibtn gear" title="Cài đặt" aria-label="Cài đặt"></button>
+        </div>
+        <div class="split">
+          <div class="left">
+            <div class="slot-input"></div>
+            <div class="slot-job"></div>
+            <div class="slot-tip"></div>
+          </div>
+          <div class="right slot-lib"></div>
+        </div>
+        <div class="credit">Created by Mondiro</div>
+        <div class="slot-sheet"></div>
+      </div></div>
+    </div>
+
+    <!-- SHARE FLOW -->
+    <div class="col">
+      <div class="cap"><b>Tải ngầm từ TikTok</b> · không cần mở app</div>
+      <div class="flow">
+        <div class="step"><div class="h"><span class="n">1</span>Trong TikTok bấm Chia sẻ</div>
+          <p>Kéo hàng app sang, chọn <b style="color:#fff">TikGrab</b>. Chọn một lần, lần sau Android tự đưa TikGrab lên đầu.</p>
+          <div class="share"><div><i></i>Tin nhắn</div><div class="me"><i></i>TikGrab</div><div><i></i>Messenger</div><div><i></i>Zalo</div></div>
+        </div>
+        <div class="step"><div class="h"><span class="n">2</span>Thông báo hiện tiến độ</div>
+          <p>Bạn vẫn ở lại TikTok xem tiếp, không bị chuyển màn hình.</p>
+          <div class="notif"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""><div class="x"><b>Đang tải video…</b><span style="color:var(--muted)">@mondiro.art · 64%</span><div class="bar"><i style="width:64%"></i></div></div></div>
+        </div>
+        <div class="step"><div class="h"><span class="n">3</span>Xong · đã lưu vào Thư viện ảnh</div>
+          <p>Video HD không watermark nằm trong <b style="color:#fff">Movies/TikGrab</b>, mở thấy ngay trong Thư viện của Samsung. Chạm vào thông báo để xem.</p>
+          <div class="notif"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""><div class="x"><b>Đã lưu video <span class="done-ic">✓</span></b><span style="color:var(--muted)">Chạm để xem · Chia sẻ</span></div></div>
+        </div>
+        <div class="step"><div class="h">Icon tạm</div>
+          <p>Icon tạm: một khung video có nút tải màu đỏ. Khi có logo thật bạn gửi mình, mình thay vào.</p>
+          <div class="iconbox" style="margin-top:12px">
+            <div class="dark"><div class="ic" style="width:64px;height:64px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""></div><div class="ic" style="width:40px;height:40px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""></div></div>
+            <div class="light"><div class="ic" style="width:64px;height:64px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""></div><div class="ic" style="width:40px;height:40px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FyZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3QjVDRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0QjJCRDYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmRTaWRlIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBMUZBOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI2MTM3QSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmFkZ2UiIGN4PSIuMzUiIGN5PSIuMyIgcj0iLjgiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGRjdFODAiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0U1MzgzQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0EzMTYxQSIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPGVsbGlwc2UgY3g9IjI1NiIgY3k9IjQ3MCIgcng9IjE3MCIgcnk9IjIyIiBmaWxsPSIjMDAwIiBvcGFjaXR5PSIuMjgiLz4KICA8IS0tIHZpZGVvIGNhcmQgd2l0aCB0aGlja25lc3MgLS0+CiAgPHJlY3QgeD0iOTYiIHk9IjU4IiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM3MCIgcng9IjQ0IiBmaWxsPSJ1cmwoI2NhcmRTaWRlKSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAxNikiLz4KICA8cmVjdCB4PSI5NiIgeT0iNTgiIHdpZHRoPSIyNjAiIGhlaWdodD0iMzcwIiByeD0iNDQiIGZpbGw9InVybCgjY2FyZCkiLz4KICA8cGF0aCBkPSJNMTMwIDkyaDEyMGEzMCAzMCAwIDAgMSAzMCAzMHYwSDEzMHoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4yMiIvPgogIDwhLS0gcGxheSB0cmlhbmdsZSAtLT4KICA8cGF0aCBkPSJNMTkwIDE3OHYxMzBsMTA0LTY1eiIgZmlsbD0iI2ZmZiIvPgogIDwhLS0gZG93bmxvYWQgYmFkZ2UgLS0+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9IiNBMzE2MUEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTIpIi8+CiAgPGNpcmNsZSBjeD0iMzU2IiBjeT0iMzcyIiByPSIxMDQiIGZpbGw9InVybCgjYmFkZ2UpIi8+CiAgPGVsbGlwc2UgY3g9IjMyMCIgY3k9IjMyMCIgcng9IjQwIiByeT0iMjIiIGZpbGw9IiNmZmYiIG9wYWNpdHk9Ii4zNSIvPgogIDxwYXRoIGQ9Ik0zNTYgMzE4djg2TTMxOCAzNjhsMzggMzggMzgtMzgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" alt=""></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="t-input">
+  <div class="card">
+    <h3>Dán link TikTok</h3>
+    <div class="field">
+      <input class="url" placeholder="https://vt.tiktok.com/…" inputmode="url">
+      <button class="chipbtn paste" title="Dán từ bộ nhớ tạm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Dán</button>
+    </div>
+    <div class="clip"><span>Phát hiện link: vt.tiktok.com/ZSj8kQ2/</span><button class="useclip">Tải luôn</button></div>
+    <button class="primary go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 11l6 6 6-6M5 21h14"/></svg>Tải về</button>
+  </div>
+</template>
+
+<template id="t-job">
+  <div class="card job-card" style="display:none">
+    <div class="job">
+      <div class="th" style="background:linear-gradient(160deg,#FF7E80,#7B5CFF)"></div>
+      <div class="meta">
+        <div class="t">Speed paint nhân vật chibi bằng Spine ✨</div>
+        <div class="a">@mondiro.art · 0:42 · HD</div>
+        <div class="bar"><i></i></div>
+        <div class="pct"><span class="st">Đang lấy thông tin…</span><span class="pv">0%</span></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="t-tip">
+  <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+  <div><b>Nhanh hơn:</b> trong TikTok bấm <b>Chia sẻ → TikGrab</b>. Video tự tải ngầm, không cần mở app này.</div></div>
+</template>
+
+<template id="t-lib">
+  <div class="libhead"><h3>Đã tải</h3><span class="count">12 video</span></div>
+  <div class="chips"><button class="chip on">Tất cả</button><button class="chip">Video</button><button class="chip">Nhạc</button></div>
+  <div class="grid"></div>
+</template>
+
+<template id="t-sheet">
+  <div class="scrim"></div>
+  <div class="sheet" role="dialog" aria-label="Cài đặt">
+    <div class="grab"></div>
+    <h2>Cài đặt</h2>
+    <div class="grp">Tải về</div>
+    <div class="set"><div class="l"><div>Thư mục lưu</div><small>Movies/TikGrab · hiện trong Thư viện</small></div><button class="chipbtn">Đổi</button></div>
+    <div class="set"><div class="l"><div>Tải thêm nhạc MP3</div><small>Lưu riêng file nhạc của video</small></div><input type="checkbox" class="sw"></div>
+    <div class="set"><div class="l"><div>Tự nhận link khi mở app</div><small>Đọc link TikTok vừa copy</small></div><input type="checkbox" class="sw" checked></div>
+    <div class="set"><div class="l"><div>Rung khi tải xong</div><small>Khi tải ngầm từ nút Chia sẻ</small></div><input type="checkbox" class="sw" checked></div>
+    <div class="grp">Phiên bản</div>
+    <div class="set" style="border:0"><div class="l"><div>TikGrab v1.0.0</div><small>Đã là bản mới nhất</small></div></div>
+    <div class="ver">
+      <button class="chipbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>What's new</button>
+      <button class="chipbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M3 21v-5h5"/></svg>Kiểm tra cập nhật</button>
+    </div>
+  </div>
+</template>
+
+<script>
+const ICON_UPD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M3 21v-5h5"/></svg>';
+const ICON_GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+const PLAY='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const GRADS=[['#FF7E80','#7B5CFF'],['#22C3A6','#1747B8'],['#FFE680','#E8930A'],['#7B5CFF','#4B2BD6'],['#3D9BFF','#22C3A6'],['#FF7E80','#A3161A'],['#E8930A','#7B5CFF'],['#1747B8','#22C3A6'],['#A3161A','#FFE680']];
+const AU=['@mondiro.art','@spine.tips','@cocos.dev','@animlab','@chibi.box','@fx.daily','@rig.school','@paint.vn','@motion.mi'];
+const DUR=['0:42','1:05','0:18','0:57','2:10','0:33','0:24','1:41','0:12'];
+
+function vidEl(i,isNew){
+  const g=GRADS[i%GRADS.length],d=document.createElement('div');
+  d.className='vid'+(isNew?' new':'');d.style.background=`linear-gradient(160deg,${g[0]},${g[1]})`;
+  d.innerHTML=`<div class="play">${PLAY}</div>${i%4===2?'<span class="mp3">MP3</span>':''}<span class="au">${AU[i%AU.length]}</span><span class="dur">${DUR[i%DUR.length]}</span>`;
+  return d;
+}
+const fill=(scr,cls,id)=>scr.querySelectorAll('.'+cls).forEach(s=>s.appendChild(document.getElementById(id).content.cloneNode(true)));
+
+document.querySelectorAll('[data-screen]').forEach(scr=>{
+  fill(scr,'slot-input','t-input');fill(scr,'slot-job','t-job');fill(scr,'slot-tip','t-tip');fill(scr,'slot-lib','t-lib');fill(scr,'slot-sheet','t-sheet');
+  const grid=scr.querySelector('.grid');const n=scr.closest('.inner')?12:9;
+  for(let i=0;i<n;i++)grid.appendChild(vidEl(i));
+  let count=12;const countEl=scr.querySelector('.count');
+
+  // filter chips
+  scr.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    scr.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+    const f=c.textContent;grid.querySelectorAll('.vid').forEach(v=>{const mp3=!!v.querySelector('.mp3');
+      v.style.display=(f==='Tất cả'||(f==='Nhạc')===mp3)?'':'none'});
+  });
+
+  // update button
+  const upd=scr.querySelector('.upd'),tag=scr.querySelector('.latest-tag');upd.innerHTML=ICON_UPD;
+  upd.onclick=()=>{upd.classList.remove('latest');tag.classList.remove('on');upd.classList.add('checking');
+    setTimeout(()=>{upd.classList.remove('checking');upd.classList.add('latest');tag.classList.add('on')},1100)};
+  setTimeout(()=>upd.click(),400);
+
+  // settings sheet
+  const gear=scr.querySelector('.gear');gear.innerHTML=ICON_GEAR;
+  gear.onclick=()=>scr.classList.add('open');scr.querySelector('.scrim').onclick=()=>scr.classList.remove('open');
+
+  // download simulation
+  const url=scr.querySelector('.url'),job=scr.querySelector('.job-card'),bar=job.querySelector('.bar i'),st=job.querySelector('.st'),pv=job.querySelector('.pv');
+  let running=false;
+  function start(){
+    if(running)return;if(!url.value)url.value='https://vt.tiktok.com/ZSj8kQ2/';
+    running=true;job.style.display='';let p=0;st.textContent='Đang lấy thông tin…';bar.style.width='0';pv.textContent='0%';
+    setTimeout(()=>{st.textContent='Đang tải video HD…';const t=setInterval(()=>{p=Math.min(100,p+7+Math.random()*9);
+      bar.style.width=p+'%';pv.textContent=Math.round(p)+'%';
+      if(p>=100){clearInterval(t);st.innerHTML='<span class="done-ic">✓ Đã lưu vào Movies/TikGrab</span>';pv.textContent='';
+        grid.prepend(vidEl(Math.floor(Math.random()*9),true));countEl.textContent=(++count)+' video';running=false;url.value=''}},180)},600);
+  }
+  scr.querySelector('.go').onclick=start;
+  scr.querySelector('.useclip').onclick=()=>{url.value='https://vt.tiktok.com/ZSj8kQ2/';scr.querySelector('.clip').style.display='none';start()};
+  scr.querySelector('.paste').onclick=()=>{url.value='https://vt.tiktok.com/ZSj8kQ2/'};
+});
+</script>
+</body>
+</html>
