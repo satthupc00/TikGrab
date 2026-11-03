@@ -16,16 +16,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Read version
         id: ver
@@ -64,7 +64,7 @@ jobs:
       - name: Show compile errors
         if: failure()
         run: |
-          grep -E "^e: |error:|What went wrong" -A2 build.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
+          grep -E "^e: |error:|What went wrong" -A2 build.log | head -120 | while IFS= read -r l; do echo "::error::$l"; done
 
       - uses: actions/upload-artifact@v4
         with:

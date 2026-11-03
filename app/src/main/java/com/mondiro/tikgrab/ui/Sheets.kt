@@ -59,13 +59,13 @@ fun SettingsSheet(vm: MainViewModel, onDismiss: () -> Unit, onWhatsNew: () -> Un
             Group("Tải về")
             SettingRow("Thư mục lưu", "${vm.baseFolder}/TikGrab · hiện trong Thư viện") {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Chip("Movies", vm.baseFolder == Prefs.FOLDER_MOVIES) { vm.setFolder(Prefs.FOLDER_MOVIES) }
-                    Chip("DCIM", vm.baseFolder == Prefs.FOLDER_DCIM) { vm.setFolder(Prefs.FOLDER_DCIM) }
+                    Chip("Movies", vm.baseFolder == Prefs.FOLDER_MOVIES) { vm.changeFolder(Prefs.FOLDER_MOVIES) }
+                    Chip("DCIM", vm.baseFolder == Prefs.FOLDER_DCIM) { vm.changeFolder(Prefs.FOLDER_DCIM) }
                 }
             }
-            SettingRow("Tải thêm nhạc MP3", "Lưu riêng file nhạc vào Music/TikGrab") { Sw(vm.saveMp3, vm::setMp3) }
-            SettingRow("Tự nhận link khi mở app", "Đọc link TikTok vừa copy") { Sw(vm.autoClip, vm::setAutoClip) }
-            SettingRow("Rung khi tải xong", "Rung nhẹ khi video đã lưu", divider = false) { Sw(vm.vibrate, vm::setVibrate) }
+            SettingRow("Tải thêm nhạc MP3", "Lưu riêng file nhạc vào Music/TikGrab") { Sw(vm.saveMp3, vm::changeMp3) }
+            SettingRow("Tự nhận link khi mở app", "Đọc link TikTok vừa copy") { Sw(vm.autoClip, vm::changeAutoClip) }
+            SettingRow("Rung khi tải xong", "Rung nhẹ khi video đã lưu", divider = false) { Sw(vm.vibrate, vm::changeVibrate) }
 
             Group("Phiên bản")
             val status = when (val u = vm.update) {

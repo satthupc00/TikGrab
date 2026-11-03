@@ -99,10 +99,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         reload()
     }
 
-    fun setFolder(v: String) { prefs.baseFolder = v; baseFolder = v }
-    fun setMp3(v: Boolean) { prefs.saveMp3 = v; saveMp3 = v }
-    fun setAutoClip(v: Boolean) { prefs.autoClipboard = v; autoClip = v }
-    fun setVibrate(v: Boolean) { prefs.vibrate = v; vibrate = v }
+    fun changeFolder(v: String) { prefs.baseFolder = v; baseFolder = v }
+    fun changeMp3(v: Boolean) { prefs.saveMp3 = v; saveMp3 = v }
+    fun changeAutoClip(v: Boolean) { prefs.autoClipboard = v; autoClip = v }
+    fun changeVibrate(v: Boolean) { prefs.vibrate = v; vibrate = v }
 
     fun checkUpdate(silent: Boolean = false) {
         if (update is UpdateState.Checking || update is UpdateState.Downloading) return
