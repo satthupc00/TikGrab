@@ -38,23 +38,7 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Restore signing key from secret
-        id: key
-        env:
-          KS: ${{ secrets.TIKGRAB_KEYSTORE }}
-        run: |
-          if [ -n "$KS" ]; then
-            echo "$KS" | base64 -d > "$RUNNER_TEMP/tikgrab.jks"
-            echo "TIKGRAB_KEYSTORE_FILE=$RUNNER_TEMP/tikgrab.jks" >> "$GITHUB_ENV"
-            echo "signed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Chưa có secret TIKGRAB_KEYSTORE — chỉ build thử, không phát hành."
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build APK
-        env:
-          TIKGRAB_KEYSTORE_PASSWORD: ${{ secrets.TIKGRAB_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
           set -o pipefail
@@ -66,13 +50,13 @@ jobs:
         run: |
           grep -E "^e: |error:|What went wrong" -A2 build.log | head -120 | while IFS= read -r l; do echo "::error::$l"; done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: TikGrab-v${{ steps.ver.outputs.version }}
           path: TikGrab-v*.apk
 
       - name: Release notes from whatsnew.json
-        if: steps.ver.outputs.exists == 'false' && steps.key.outputs.signed == 'true'
+        if: steps.ver.outputs.exists == 'false'
         run: |
           python3 - <<'PY'
           import json
@@ -88,7 +72,7 @@ jobs:
           PY
 
       - name: Publish GitHub Release
-        if: steps.ver.outputs.exists == 'false' && steps.key.outputs.signed == 'true'
+        if: steps.ver.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

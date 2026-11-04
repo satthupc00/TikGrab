@@ -16,14 +16,14 @@ android {
         versionName = "1.0.0"
     }
 
-    // Khoá ký nằm trong GitHub Secret (không lưu trong repo). Có khoá → các bản cập nhật cài đè được lên nhau.
-    val ksFile = System.getenv("TIKGRAB_KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    // App làm cho vui: dùng một khoá ký cố định để sẵn trong repo (giống khoá debug),
+    // để các bản cập nhật cài đè được lên nhau mà không cần cấu hình secret.
     signingConfigs {
-        if (ksFile != null) create("release") {
-            storeFile = ksFile
-            storePassword = System.getenv("TIKGRAB_KEYSTORE_PASSWORD")
+        create("hobby") {
+            storeFile = file("tikgrab-debug.keystore")
+            storePassword = "android"
             keyAlias = "tikgrab"
-            keyPassword = System.getenv("TIKGRAB_KEYSTORE_PASSWORD")
+            keyPassword = "android"
         }
     }
 
@@ -32,8 +32,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Chưa có khoá (vd build thử) → ký bằng khoá debug, không phát hành.
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("hobby")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("hobby")
         }
     }
 

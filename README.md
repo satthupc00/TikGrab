@@ -13,6 +13,6 @@ Vào mục **Releases** của repo, tải file `TikGrab-vX.Y.Z.apk` về điện
 
 ## Phát hành bản mới
 Tăng `versionName` / `versionCode` trong `app/build.gradle.kts`, cập nhật `app/src/main/assets/whatsnew.json`, rồi push. GitHub Actions tự build APK và tạo Release mới.
-Khoá ký app nằm trong 2 GitHub Secret: `TIKGRAB_KEYSTORE` (base64 của file .jks) và `TIKGRAB_KEYSTORE_PASSWORD`.
+App ký bằng khoá cố định `app/tikgrab-debug.keystore` (app làm cho vui, không cần bảo mật).
 
 Created by Mondiro
